@@ -1,4 +1,4 @@
-use chrono::{Local, Offset};
+use chrono::{Local, Offset, Timelike};
 use gtk4::prelude::*;
 use gtk4::{Application, ApplicationWindow, Label};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
@@ -22,6 +22,29 @@ fn time() -> String {
     let offset = now.offset().fix().local_minus_utc();
     let zone = nato_zone(offset);
     format!("{}{zone}", now.format("%H%M"))
+}
+
+fn binary_boxes(value: u32, bits: usize) -> String {
+    (0..bits)
+        .rev()
+        .map(|bit| {
+            if value & (1 << bit) != 0 {
+                '■'
+            } else {
+                '□'
+            }
+        })
+        .collect()
+}
+
+fn binary_time() -> String {
+    let now = Local::now();
+    format!(
+        "{}:{}:{}",
+        binary_boxes(now.hour(), 5),
+        binary_boxes(now.minute(), 6),
+        binary_boxes(now.second(), 6),
+    )
 }
 
 fn battery() -> Option<(u8, String)> {
@@ -56,6 +79,7 @@ fn network() -> String {
 }
 
 fn status_text() -> String {
+    let bintime = binary_time();
     let time = time();
     let battery = match battery() {
         Some((capacity, status)) => {
@@ -69,7 +93,7 @@ fn status_text() -> String {
         None => "BAT ?".into(),
     };
     let network = network();
-    format!("{network}    {battery}    {time}")
+    format!("{bintime}    {network}    {battery}    {time}")
 }
 
 fn build_ui(app: &Application) {
