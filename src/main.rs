@@ -1,4 +1,4 @@
-use chrono::Local;
+use chrono::{Local, Offset};
 use gtk4::prelude::*;
 use gtk4::{Application, ApplicationWindow, Label};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
@@ -6,6 +6,23 @@ use std::fs;
 use std::process::Command;
 
 const APP_ID: &str = "dev.noe.rustbar";
+
+// J is skipped, TODO explicit matter
+fn nato_zone(offset_seconds: i32) -> char {
+    match offset_seconds / 3600 {
+        1..=12 => (b'A' + (offset_seconds / 3600 - 1) as u8) as char,
+        -12..=-1 => (b'N' + (-offset_seconds / 3600 - 1) as u8) as char,
+        0 => 'Z',
+        _ => '?',
+    }
+}
+
+fn time() -> String {
+    let now = Local::now();
+    let offset = now.offset().fix().local_minus_utc();
+    let zone = nato_zone(offset);
+    format!("{}{zone}", now.format("%H%M"))
+}
 
 fn battery() -> Option<(u8, String)> {
     let base = "/sys/class/power_supply/BAT0";
@@ -39,7 +56,7 @@ fn network() -> String {
 }
 
 fn status_text() -> String {
-    let time = Local::now().format("%H:%M").to_string();
+    let time = time();
     let battery = match battery() {
         Some((capacity, status)) => {
             let marker = match status.as_str() {
