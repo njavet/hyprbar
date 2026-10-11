@@ -96,16 +96,37 @@ fn status_text() -> String {
     format!("{bintime}    {network}    {battery}    {time}")
 }
 
+
 fn build_ui(app: &Application) {
     let label = Label::new(None);
     label.set_xalign(1.0);
     label.set_margin_end(12);
+
+    let provider = gtk4::CssProvider::new();
+    provider.load_from_data(
+        r#"
+        window {
+            background-color: rgba(0, 0, 0, 0.64);
+        }
+
+        label {
+            color: white;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        "#,
+    );
     let window = ApplicationWindow::builder()
         .application(app)
         .title("rustbar")
         .height_request(28)
         .child(&label)
         .build();
+    gtk4::style_context_add_provider_for_display(
+        &gtk4::prelude::WidgetExt::display(&window),
+        &provider,
+        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
     window.init_layer_shell();
     window.set_layer(Layer::Top);
     window.set_anchor(Edge::Top, true);
