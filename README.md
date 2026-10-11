@@ -1,0 +1,2 @@
+# hyprbar
+bar for hyprland 
