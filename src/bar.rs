@@ -1,6 +1,7 @@
 use crate::system::{hyprland, procfs, sysfs};
 use crate::theme;
 use crate::widgets::{battery, binary_clock, graph};
+use hyprbar::nato_zone;
 
 use chrono::{Local, Offset};
 use gtk4::prelude::*;
@@ -13,40 +14,6 @@ use std::rc::Rc;
 // -----------------------------------------------------------------------------
 // Time
 // -----------------------------------------------------------------------------
-
-fn nato_zone(offset_seconds: i32) -> char {
-    match offset_seconds / 3600 {
-        0 => 'Z',
-
-        1 => 'A',
-        2 => 'B',
-        3 => 'C',
-        4 => 'D',
-        5 => 'E',
-        6 => 'F',
-        7 => 'G',
-        8 => 'H',
-        9 => 'I',
-        10 => 'K',
-        11 => 'L',
-        12 => 'M',
-
-        -1 => 'N',
-        -2 => 'O',
-        -3 => 'P',
-        -4 => 'Q',
-        -5 => 'R',
-        -6 => 'S',
-        -7 => 'T',
-        -8 => 'U',
-        -9 => 'V',
-        -10 => 'W',
-        -11 => 'X',
-        -12 => 'Y',
-
-        _ => '?',
-    }
-}
 
 fn nato_time() -> String {
     let now = Local::now();
