@@ -121,6 +121,12 @@ pub fn build(app: &Application) {
     // =========================================================================
 
     let left = GtkBox::new(Orientation::Horizontal, 5);
+    let workspace_label =
+        Label::new(Some(&workspace_text()));
+
+    workspace_label.add_css_class("workspaces");
+
+    left.append(&workspace_label);
 
     // -------------------------------------------------------------------------
     // Graph state
@@ -371,14 +377,19 @@ pub fn build(app: &Application) {
     // version polling every 2 seconds is simple. Later we'll replace it with
     // Hyprland's event socket.
     // =========================================================================
-
     let title_tick = title_label.clone();
+    let workspace_tick = workspace_label.clone();
 
     glib::timeout_add_seconds_local(2, move || {
         title_tick.set_text(&window_title());
 
+        workspace_tick.set_text(
+            &workspace_text(),
+        );
+
         glib::ControlFlow::Continue
     });
+
 
     // =========================================================================
     // Slow system information
@@ -415,4 +426,21 @@ pub fn build(app: &Application) {
     // =========================================================================
 
     window.present();
+}
+
+fn workspace_text() -> String {
+    let workspaces = hyprland::workspaces();
+    let active = hyprland::active_workspace();
+
+    workspaces
+        .into_iter()
+        .map(|id| {
+            if Some(id) == active {
+                format!("[{id}]")
+            } else {
+                id.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }

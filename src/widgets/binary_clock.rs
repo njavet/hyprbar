@@ -68,7 +68,7 @@ fn draw(cr: &Context) {
 pub fn widget() -> DrawingArea {
     let area = DrawingArea::new();
 
-    area.set_content_width(190);
+    area.set_content_width(198);
     area.set_content_height(BAR_HEIGHT);
 
     area.set_draw_func(|_, cr, _, _| {
