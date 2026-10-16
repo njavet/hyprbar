@@ -1,0 +1,42 @@
+use chrono::{Local, Offset};
+
+pub fn nato_time() -> String {
+    let now = Local::now();
+    let offset = now.offset().fix().local_minus_utc();
+    let zone = nato_zone(offset);
+    format!("{}{zone}", now.format("%H%M"))
+}
+
+fn nato_zone(offset_seconds: i32) -> char {
+    match offset_seconds / 3600 {
+        0 => 'Z',
+
+        1 => 'A',
+        2 => 'B',
+        3 => 'C',
+        4 => 'D',
+        5 => 'E',
+        6 => 'F',
+        7 => 'G',
+        8 => 'H',
+        9 => 'I',
+        10 => 'K',
+        11 => 'L',
+        12 => 'M',
+
+        -1 => 'N',
+        -2 => 'O',
+        -3 => 'P',
+        -4 => 'Q',
+        -5 => 'R',
+        -6 => 'S',
+        -7 => 'T',
+        -8 => 'U',
+        -9 => 'V',
+        -10 => 'W',
+        -11 => 'X',
+        -12 => 'Y',
+
+        _ => '?',
+    }
+}

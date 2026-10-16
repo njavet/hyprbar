@@ -1,7 +1,6 @@
-use crate::system::{hyprland, procfs, sysfs};
+use crate::system::{hyprland, procfs, sysfs, nato};
 use crate::theme;
 use crate::widgets::{battery, binary_clock, graph};
-use crate::nato::time::nato_time;
 
 use gtk4::prelude::*;
 use gtk4::{Align, Application, ApplicationWindow, Box as GtkBox, Label, Orientation, Overlay};
@@ -9,7 +8,6 @@ use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
 use std::cell::RefCell;
 use std::rc::Rc;
-
 
 // -----------------------------------------------------------------------------
 // Labels
@@ -198,7 +196,7 @@ pub fn build(app: &Application) {
     // -------------------------------------------------------------------------
 
     let nato_label = Label::new(None);
-    nato_label.set_text(&nato_time());
+    nato_label.set_text(&nato::nato_time());
 
     right.append(&nato_label);
 
@@ -365,7 +363,7 @@ pub fn build(app: &Application) {
         battery_tick.set_text(&battery_perc());
         battery_power_tick.set_text(&battery_power());
 
-        nato_tick.set_text(&nato_time());
+        nato_tick.set_text(&nato::nato_time());
 
         glib::ControlFlow::Continue
     });

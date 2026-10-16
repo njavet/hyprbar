@@ -3,8 +3,6 @@ mod system;
 mod theme;
 mod widgets;
 
-mod nato;
-
 use gtk4::Application;
 use gtk4::prelude::*;
 
@@ -16,4 +14,3 @@ fn main() {
     app.connect_activate(bar::build);
     app.run();
 }
-
