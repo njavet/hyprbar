@@ -12,10 +12,7 @@ struct ActiveWorkspace {
 }
 
 fn hyprctl(args: &[&str]) -> Option<Vec<u8>> {
-    let output = Command::new("hyprctl")
-        .args(args)
-        .output()
-        .ok()?;
+    let output = Command::new("hyprctl").args(args).output().ok()?;
 
     if !output.status.success() {
         return None;
@@ -29,9 +26,7 @@ pub fn workspaces() -> Vec<i32> {
         return Vec::new();
     };
 
-    let Ok(workspaces) =
-        serde_json::from_slice::<Vec<Workspace>>(&data)
-    else {
+    let Ok(workspaces) = serde_json::from_slice::<Vec<Workspace>>(&data) else {
         return Vec::new();
     };
 
@@ -48,12 +43,9 @@ pub fn workspaces() -> Vec<i32> {
 }
 
 pub fn active_workspace() -> Option<i32> {
-    let data =
-        hyprctl(&["activeworkspace", "-j"])?;
+    let data = hyprctl(&["activeworkspace", "-j"])?;
 
-    let workspace =
-        serde_json::from_slice::<ActiveWorkspace>(&data)
-            .ok()?;
+    let workspace = serde_json::from_slice::<ActiveWorkspace>(&data).ok()?;
 
     Some(workspace.id)
 }
@@ -61,10 +53,7 @@ pub fn active_workspace() -> Option<i32> {
 pub fn active_window() -> Option<String> {
     let data = hyprctl(&["activewindow", "-j"])?;
 
-    let json: serde_json::Value =
-        serde_json::from_slice(&data).ok()?;
+    let json: serde_json::Value = serde_json::from_slice(&data).ok()?;
 
-    json["title"]
-        .as_str()
-        .map(str::to_owned)
+    json["title"].as_str().map(str::to_owned)
 }

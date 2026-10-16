@@ -31,7 +31,11 @@ pub fn battery() -> Option<Battery> {
         .map(|s| if s == "Not charging" { false } else { true })
         .ok()?;
 
-    Some(Battery { capacity, power_w, charging })
+    Some(Battery {
+        capacity,
+        power_w,
+        charging,
+    })
 }
 
 pub fn temperature() -> Option<f64> {
@@ -60,21 +64,16 @@ pub fn temperature() -> Option<f64> {
 
 pub fn active_network() -> Option<String> {
     let entries = fs::read_dir("/sys/class/net").ok()?;
-
     for entry in entries.flatten() {
         let name = entry.file_name();
         let name = name.to_string_lossy();
-
         if name == "lo" {
             continue;
         }
-
         let state = fs::read_to_string(format!("/sys/class/net/{name}/operstate")).ok();
-
         if state.as_deref().map(str::trim) == Some("up") {
             return Some(name.into_owned());
         }
     }
-
     None
 }

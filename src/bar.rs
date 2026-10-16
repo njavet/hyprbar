@@ -61,16 +61,15 @@ fn nato_time() -> String {
 // Labels
 // -----------------------------------------------------------------------------
 
-fn battery_hex() -> String {
+fn battery_perc() -> String {
     sysfs::battery()
-        .map(|bat| format!("{:02X}", bat.capacity))
-        .unwrap_or_else(|| "??".into())
+        .map(|bat| format!("{:02}%", bat.capacity))
+        .unwrap_or_else(|| "--,-%".into())
 }
 
 fn battery_power() -> String {
     sysfs::battery()
-        .and_then(|bat| bat.power_w)
-        .map(|watts| format!("{watts:.1}W"))
+        .map(|bat| format!("{:.1}W", bat.power_w))
         .unwrap_or_else(|| "--.-W".into())
 }
 
@@ -121,8 +120,7 @@ pub fn build(app: &Application) {
     // =========================================================================
 
     let left = GtkBox::new(Orientation::Horizontal, 5);
-    let workspace_label =
-        Label::new(Some(&workspace_text()));
+    let workspace_label = Label::new(Some(&workspace_text()));
 
     workspace_label.add_css_class("workspaces");
 
@@ -383,13 +381,10 @@ pub fn build(app: &Application) {
     glib::timeout_add_seconds_local(2, move || {
         title_tick.set_text(&window_title());
 
-        workspace_tick.set_text(
-            &workspace_text(),
-        );
+        workspace_tick.set_text(&workspace_text());
 
         glib::ControlFlow::Continue
     });
-
 
     // =========================================================================
     // Slow system information
