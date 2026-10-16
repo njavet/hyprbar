@@ -3,12 +3,14 @@ use std::fs;
 #[derive(Debug, Clone)]
 pub struct Battery {
     pub capacity: u8,
-    pub power_w: Option<f64>,
+    pub power_w: f64,
+    pub charging: bool,
 }
 
 pub fn battery() -> Option<Battery> {
     let base = "/sys/class/power_supply/BAT0";
 
+    // TODO how does rust know it's u8 parse ?
     let capacity = fs::read_to_string(format!("{base}/capacity"))
         .ok()?
         .trim()
@@ -16,11 +18,20 @@ pub fn battery() -> Option<Battery> {
         .ok()?;
 
     let power_w = fs::read_to_string(format!("{base}/power_now"))
-        .ok()
-        .and_then(|v| v.trim().parse::<f64>().ok())
-        .map(|uw| uw / 1_000_000.0);
+        .ok()?
+        .trim()
+        .parse()
+        .map(|uw| uw / 1_000_000.0)
+        .ok()?;
 
-    Some(Battery { capacity, power_w })
+    let charging = fs::read_to_string(format!("{base}/status"))
+        .ok()?
+        .trim()
+        .parse()
+        .map(|s| if s == "Not charging" { false } else { true })
+        .ok()?;
+
+    Some(Battery { capacity, power_w, charging })
 }
 
 pub fn temperature() -> Option<f64> {
