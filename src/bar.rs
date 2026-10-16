@@ -1,7 +1,6 @@
 use crate::system::{hyprland, procfs, sysfs};
 use crate::theme;
 use crate::widgets::{battery, binary_clock, graph};
-use hyprbar::nato_zone;
 
 use chrono::{Local, Offset};
 use gtk4::prelude::*;
@@ -19,7 +18,7 @@ fn nato_time() -> String {
     let now = Local::now();
 
     let offset = now.offset().fix().local_minus_utc();
-    let zone = nato_zone(offset);
+    let zone = crate::nato::time::nato_zone(offset);
 
     format!("{}{zone}", now.format("%H%M"))
 }
