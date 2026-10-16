@@ -21,15 +21,17 @@ pub fn battery() -> Option<Battery> {
         .ok()?
         .trim()
         .parse()
-        .map(|uw| uw / 1_000_000.0)
+        .map(|uw: f64| uw / 1_000_000.0)
         .ok()?;
 
-    let charging = fs::read_to_string(format!("{base}/status"))
-        .ok()?
-        .trim()
-        .parse()
-        .map(|s| if s == "Not charging" { false } else { true })
-        .ok()?;
+    let charging_str = fs::read_to_string(format!("{base}/status")).ok()?.trim();
+
+    let charging;
+    if charging_str == "Not charging" {
+        charging = false;
+    } else {
+        charging = true;
+    }
 
     Some(Battery {
         capacity,

@@ -225,10 +225,10 @@ pub fn build(app: &Application) {
     // Battery as hexadecimal percentage
     // -------------------------------------------------------------------------
 
-    let battery_hex_label = Label::new(None);
-    battery_hex_label.set_text(&battery_hex());
+    let battery_label = Label::new(None);
+    battery_label.set_text(&battery_perc());
 
-    right.append(&battery_hex_label);
+    right.append(&battery_label);
 
     // -------------------------------------------------------------------------
     // Battery power
@@ -396,7 +396,7 @@ pub fn build(app: &Application) {
     let network_tick = network_label.clone();
 
     let battery_area_tick = battery_area.clone();
-    let battery_hex_tick = battery_hex_label.clone();
+    let battery_tick = battery_label.clone();
     let battery_power_tick = battery_power_label.clone();
 
     let nato_tick = nato_label.clone();
@@ -408,7 +408,7 @@ pub fn build(app: &Application) {
 
         battery_area_tick.queue_draw();
 
-        battery_hex_tick.set_text(&battery_hex());
+        battery_tick.set_text(&battery_perc());
         battery_power_tick.set_text(&battery_power());
 
         nato_tick.set_text(&nato_time());
