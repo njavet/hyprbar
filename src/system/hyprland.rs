@@ -42,8 +42,3 @@ pub fn active_workspace() -> Option<i32> {
     Some(workspace.id)
 }
 
-pub fn active_window() -> Option<String> {
-    let data = hyprctl(&["activewindow", "-j"])?;
-    let json: serde_json::Value = serde_json::from_slice(&data).ok()?;
-    json["title"].as_str().map(str::to_owned)
-}
