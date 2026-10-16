@@ -1,5 +1,5 @@
-use std::process::Command;
 use serde_json::Value;
+use std::process::Command;
 
 pub fn active_window() -> Option<String> {
     let output = Command::new("hyprctl")
@@ -7,10 +7,7 @@ pub fn active_window() -> Option<String> {
         .output()
         .ok()?;
 
-    let json: Value =
-        serde_json::from_slice(&output.stdout).ok()?;
+    let json: Value = serde_json::from_slice(&output.stdout).ok()?;
 
-    json["title"]
-        .as_str()
-        .map(str::to_owned)
+    json["title"].as_str().map(str::to_owned)
 }

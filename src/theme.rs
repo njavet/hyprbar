@@ -2,11 +2,9 @@ use gtk4::prelude::*;
 
 pub const BAR_HEIGHT: i32 = 28;
 
-pub const FG: (f64, f64, f64, f64) =
-    (0.80, 1.00, 0.85, 0.95);
+pub const FG: (f64, f64, f64, f64) = (0.80, 1.00, 0.85, 0.95);
 
-pub const FG_DIM: (f64, f64, f64, f64) =
-    (0.80, 1.00, 0.85, 0.20);
+pub const FG_DIM: (f64, f64, f64, f64) = (0.80, 1.00, 0.85, 0.20);
 
 pub fn install(window: &impl IsA<gtk4::Widget>) {
     let css = gtk4::CssProvider::new();

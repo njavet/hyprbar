@@ -1,20 +1,418 @@
-// Conceptually:
+use crate::system::{hyprland, procfs, sysfs};
+use crate::theme;
+use crate::widgets::{battery, binary_clock, graph};
 
-let left = GtkBox::new(...);
+use chrono::{Local, Offset};
+use gtk4::prelude::*;
+use gtk4::{Align, Application, ApplicationWindow, Box as GtkBox, Label, Orientation, Overlay};
+use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
-left.append(&workspace_widget);
-left.append(&cpu_graph);
-left.append(&ram_graph);
-left.append(&net_graph);
-left.append(&window_title);
+use std::cell::RefCell;
+use std::rc::Rc;
 
-let center = binary_clock::widget();
+// -----------------------------------------------------------------------------
+// Time
+// -----------------------------------------------------------------------------
 
-let right = GtkBox::new(...);
+fn nato_zone(offset_seconds: i32) -> char {
+    match offset_seconds / 3600 {
+        0 => 'Z',
 
-right.append(&temperature);
-right.append(&network);
-right.append(&battery);
-right.append(&battery_hex);
-right.append(&battery_power);
-right.append(&nato_time);
+        1 => 'A',
+        2 => 'B',
+        3 => 'C',
+        4 => 'D',
+        5 => 'E',
+        6 => 'F',
+        7 => 'G',
+        8 => 'H',
+        9 => 'I',
+        10 => 'K',
+        11 => 'L',
+        12 => 'M',
+
+        -1 => 'N',
+        -2 => 'O',
+        -3 => 'P',
+        -4 => 'Q',
+        -5 => 'R',
+        -6 => 'S',
+        -7 => 'T',
+        -8 => 'U',
+        -9 => 'V',
+        -10 => 'W',
+        -11 => 'X',
+        -12 => 'Y',
+
+        _ => '?',
+    }
+}
+
+fn nato_time() -> String {
+    let now = Local::now();
+
+    let offset = now.offset().fix().local_minus_utc();
+    let zone = nato_zone(offset);
+
+    format!("{}{zone}", now.format("%H%M"))
+}
+
+// -----------------------------------------------------------------------------
+// Labels
+// -----------------------------------------------------------------------------
+
+fn battery_hex() -> String {
+    sysfs::battery()
+        .map(|bat| format!("{:02X}", bat.capacity))
+        .unwrap_or_else(|| "??".into())
+}
+
+fn battery_power() -> String {
+    sysfs::battery()
+        .and_then(|bat| bat.power_w)
+        .map(|watts| format!("{watts:.1}W"))
+        .unwrap_or_else(|| "--.-W".into())
+}
+
+fn temperature() -> String {
+    sysfs::temperature()
+        .map(|temp| format!("{:02X}°", temp.round() as u32))
+        .unwrap_or_else(|| "??°".into())
+}
+
+fn network_name() -> String {
+    sysfs::active_network().unwrap_or_else(|| "OFFLINE".into())
+}
+
+fn window_title() -> String {
+    hyprland::active_window()
+        .filter(|title| !title.is_empty())
+        .unwrap_or_default()
+}
+
+// -----------------------------------------------------------------------------
+// Main bar
+// -----------------------------------------------------------------------------
+
+pub fn build(app: &Application) {
+    //
+    // Overlay gives us:
+    //
+    // [ left ------------------------------- right ]
+    //                    +
+    //             [ exact center ]
+    //
+    // Therefore unequal left/right widths do NOT move the binary clock.
+    //
+
+    let overlay = Overlay::new();
+
+    // =========================================================================
+    // Base layout
+    // =========================================================================
+
+    let base = GtkBox::new(Orientation::Horizontal, 10);
+
+    base.set_margin_start(10);
+    base.set_margin_end(10);
+
+    // =========================================================================
+    // LEFT
+    // =========================================================================
+
+    let left = GtkBox::new(Orientation::Horizontal, 5);
+
+    // -------------------------------------------------------------------------
+    // Graph state
+    // -------------------------------------------------------------------------
+
+    let cpu_history = Rc::new(RefCell::new(graph::History::new()));
+
+    let ram_history = Rc::new(RefCell::new(graph::History::new()));
+
+    let net_history = Rc::new(RefCell::new(graph::History::new()));
+
+    // -------------------------------------------------------------------------
+    // CPU graph
+    // -------------------------------------------------------------------------
+
+    let cpu_label = Label::new(Some("CPU"));
+    let cpu_graph = graph::widget(cpu_history.clone());
+
+    left.append(&cpu_label);
+    left.append(&cpu_graph);
+
+    // -------------------------------------------------------------------------
+    // RAM graph
+    // -------------------------------------------------------------------------
+
+    let ram_label = Label::new(Some("RAM"));
+    let ram_graph = graph::widget(ram_history.clone());
+
+    left.append(&ram_label);
+    left.append(&ram_graph);
+
+    // -------------------------------------------------------------------------
+    // Network graph
+    // -------------------------------------------------------------------------
+
+    let net_label = Label::new(Some("NET"));
+    let net_graph = graph::widget(net_history.clone());
+
+    left.append(&net_label);
+    left.append(&net_graph);
+
+    // -------------------------------------------------------------------------
+    // Active window
+    // -------------------------------------------------------------------------
+
+    let title_label = Label::new(None);
+
+    title_label.set_text(&window_title());
+    title_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+    title_label.set_max_width_chars(40);
+
+    left.append(&title_label);
+
+    base.append(&left);
+
+    // =========================================================================
+    // Flexible space
+    // =========================================================================
+
+    let spacer = GtkBox::new(Orientation::Horizontal, 0);
+    spacer.set_hexpand(true);
+
+    base.append(&spacer);
+
+    // =========================================================================
+    // RIGHT
+    // =========================================================================
+
+    let right = GtkBox::new(Orientation::Horizontal, 8);
+
+    // -------------------------------------------------------------------------
+    // Temperature
+    // -------------------------------------------------------------------------
+
+    let temp_label = Label::new(None);
+    temp_label.set_text(&temperature());
+
+    right.append(&temp_label);
+
+    // -------------------------------------------------------------------------
+    // Network
+    // -------------------------------------------------------------------------
+
+    let network_label = Label::new(None);
+    network_label.set_text(&network_name());
+
+    right.append(&network_label);
+
+    // -------------------------------------------------------------------------
+    // Battery graphic
+    // -------------------------------------------------------------------------
+
+    let battery_area = battery::widget();
+
+    right.append(&battery_area);
+
+    // -------------------------------------------------------------------------
+    // Battery as hexadecimal percentage
+    // -------------------------------------------------------------------------
+
+    let battery_hex_label = Label::new(None);
+    battery_hex_label.set_text(&battery_hex());
+
+    right.append(&battery_hex_label);
+
+    // -------------------------------------------------------------------------
+    // Battery power
+    // -------------------------------------------------------------------------
+
+    let battery_power_label = Label::new(None);
+    battery_power_label.set_text(&battery_power());
+
+    right.append(&battery_power_label);
+
+    // -------------------------------------------------------------------------
+    // NATO time
+    // -------------------------------------------------------------------------
+
+    let nato_label = Label::new(None);
+    nato_label.set_text(&nato_time());
+
+    right.append(&nato_label);
+
+    base.append(&right);
+
+    overlay.set_child(Some(&base));
+
+    // =========================================================================
+    // CENTER
+    // =========================================================================
+
+    let clock = binary_clock::widget();
+
+    clock.set_halign(Align::Center);
+    clock.set_valign(Align::Center);
+
+    overlay.add_overlay(&clock);
+
+    // =========================================================================
+    // Window
+    // =========================================================================
+
+    let window = ApplicationWindow::builder()
+        .application(app)
+        .height_request(theme::BAR_HEIGHT)
+        .child(&overlay)
+        .build();
+
+    window.init_layer_shell();
+
+    window.set_layer(Layer::Top);
+
+    window.set_anchor(Edge::Top, true);
+    window.set_anchor(Edge::Left, true);
+    window.set_anchor(Edge::Right, true);
+
+    window.set_exclusive_zone(theme::BAR_HEIGHT);
+
+    theme::install(&window);
+
+    // =========================================================================
+    // Sampling state
+    // =========================================================================
+
+    let previous_cpu = Rc::new(RefCell::new(None::<procfs::CpuSample>));
+
+    let previous_network = Rc::new(RefCell::new(None::<u64>));
+
+    // =========================================================================
+    // 1 Hz
+    //
+    // Things which genuinely benefit from frequent sampling:
+    //
+    // - CPU
+    // - RAM
+    // - network throughput
+    // - seconds in binary clock
+    // =========================================================================
+
+    let cpu_history_tick = cpu_history.clone();
+    let ram_history_tick = ram_history.clone();
+    let net_history_tick = net_history.clone();
+
+    let cpu_graph_tick = cpu_graph.clone();
+    let ram_graph_tick = ram_graph.clone();
+    let net_graph_tick = net_graph.clone();
+
+    let clock_tick = clock.clone();
+
+    let previous_cpu_tick = previous_cpu.clone();
+    let previous_network_tick = previous_network.clone();
+
+    glib::timeout_add_seconds_local(1, move || {
+        // ---------------------------------------------------------------------
+        // CPU
+        // ---------------------------------------------------------------------
+
+        let cpu = procfs::cpu_usage(&mut previous_cpu_tick.borrow_mut());
+
+        cpu_history_tick.borrow_mut().push(cpu);
+
+        // ---------------------------------------------------------------------
+        // RAM
+        // ---------------------------------------------------------------------
+
+        let ram = procfs::ram_usage();
+
+        ram_history_tick.borrow_mut().push(ram);
+
+        // ---------------------------------------------------------------------
+        // Network throughput
+        // ---------------------------------------------------------------------
+
+        let current_network = procfs::network_bytes().unwrap_or(0);
+
+        let mut previous = previous_network_tick.borrow_mut();
+
+        let delta = previous
+            .map(|old| current_network.saturating_sub(old))
+            .unwrap_or(0);
+
+        *previous = Some(current_network);
+
+        // 1 MiB/s = full graph height.
+        //
+        // We can improve this later with logarithmic scaling.
+        let net = (delta as f64 / (1024.0 * 1024.0)).clamp(0.0, 1.0);
+
+        net_history_tick.borrow_mut().push(net);
+
+        // ---------------------------------------------------------------------
+        // Redraw
+        // ---------------------------------------------------------------------
+
+        cpu_graph_tick.queue_draw();
+        ram_graph_tick.queue_draw();
+        net_graph_tick.queue_draw();
+
+        clock_tick.queue_draw();
+
+        glib::ControlFlow::Continue
+    });
+
+    // =========================================================================
+    // 5 Hz? No.
+    //
+    // 1 second polling for Hyprland isn't necessary either, but for this first
+    // version polling every 2 seconds is simple. Later we'll replace it with
+    // Hyprland's event socket.
+    // =========================================================================
+
+    let title_tick = title_label.clone();
+
+    glib::timeout_add_seconds_local(2, move || {
+        title_tick.set_text(&window_title());
+
+        glib::ControlFlow::Continue
+    });
+
+    // =========================================================================
+    // Slow system information
+    //
+    // None of these need 1 Hz updates.
+    // =========================================================================
+
+    let temp_tick = temp_label.clone();
+    let network_tick = network_label.clone();
+
+    let battery_area_tick = battery_area.clone();
+    let battery_hex_tick = battery_hex_label.clone();
+    let battery_power_tick = battery_power_label.clone();
+
+    let nato_tick = nato_label.clone();
+
+    glib::timeout_add_seconds_local(10, move || {
+        temp_tick.set_text(&temperature());
+
+        network_tick.set_text(&network_name());
+
+        battery_area_tick.queue_draw();
+
+        battery_hex_tick.set_text(&battery_hex());
+        battery_power_tick.set_text(&battery_power());
+
+        nato_tick.set_text(&nato_time());
+
+        glib::ControlFlow::Continue
+    });
+
+    // =========================================================================
+    // Show it
+    // =========================================================================
+
+    window.present();
+}
