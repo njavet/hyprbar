@@ -25,7 +25,7 @@ fn battery_power() -> String {
 
 fn cpu_temperature() -> String {
     sysfs::temperature()
-        .map(|temp| format!("{:02X}°", temp.round() as u32))
+        .map(|temp| format!("{:02}°C", temp.round() as u32))
         .unwrap_or_else(|| "??°".into())
 }
 
@@ -52,21 +52,18 @@ fn workspace_text() -> String {
 // Main bar
 // -----------------------------------------------------------------------------
 pub fn build(app: &Application) {
-    //
     // Overlay gives us:
-    //
     // [ left ------------------------------- right ]
     //                    +
     //             [ exact center ]
     //
     // Therefore unequal left/right widths do NOT move the binary clock.
-    //
     let overlay = Overlay::new();
 
     // =========================================================================
     // Base layout
     // =========================================================================
-    let base = GtkBox::new(Orientation::Horizontal, 10);
+    let base = GtkBox::new(Orientation::Horizontal, 16);
     base.set_margin_start(16);
     base.set_margin_end(16);
 
@@ -75,8 +72,10 @@ pub fn build(app: &Application) {
     // =========================================================================
     let left = GtkBox::new(Orientation::Horizontal, 5);
     let workspace_label = Label::new(Some(&workspace_text()));
+    let ascii_spacer0 = Label::new(Some(" - "));
     workspace_label.add_css_class("workspaces");
     left.append(&workspace_label);
+    left.append(&ascii_spacer0);
 
     // -------------------------------------------------------------------------
     // Graph state
@@ -88,9 +87,14 @@ pub fn build(app: &Application) {
     // -------------------------------------------------------------------------
     // CPU graph
     // -------------------------------------------------------------------------
-    let cpu_label = Label::new(Some("CPU"));
+    let temp_label = Label::new(None);
+    let cpu_label = Label::new(Some("CPU:"));
     let cpu_graph = graph::widget(cpu_history.clone());
+    let ascii_spacer1 = Label::new(Some("|"));
+    temp_label.set_text(&cpu_temperature());
     left.append(&cpu_label);
+    left.append(&temp_label);
+    left.append(&ascii_spacer1);
     left.append(&cpu_graph);
 
     // -------------------------------------------------------------------------
@@ -98,24 +102,30 @@ pub fn build(app: &Application) {
     // -------------------------------------------------------------------------
     let ram_label = Label::new(Some("RAM"));
     let ram_graph = graph::widget(ram_history.clone());
+    let ascii_spacer2 = Label::new(Some("|"));
+    let ascii_spacer3 = Label::new(Some("|"));
+    let ascii_spacer4 = Label::new(Some("|"));
+    left.append(&ascii_spacer2);
     left.append(&ram_label);
+    left.append(&ascii_spacer3);
     left.append(&ram_graph);
+    left.append(&ascii_spacer4);
 
     // -------------------------------------------------------------------------
     // Network graph
     // -------------------------------------------------------------------------
-    let net_label = Label::new(Some("NET"));
+    let net_label = Label::new(Some("NET:"));
     let net_graph = graph::widget(net_history.clone());
+    let network_label = Label::new(None);
+    let ascii_spacer5 = Label::new(Some("|"));
+    let ascii_spacer6 = Label::new(Some("|"));
     left.append(&net_label);
+    left.append(&network_label);
+    network_label.set_text(&network_name());
+    left.append(&ascii_spacer5);
     left.append(&net_graph);
+    left.append(&ascii_spacer6);
 
-    // -------------------------------------------------------------------------
-    // Active window
-    // -------------------------------------------------------------------------
-    let title_label = Label::new(None);
-    title_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
-    title_label.set_max_width_chars(40);
-    left.append(&title_label);
     base.append(&left);
 
     // =========================================================================
@@ -124,25 +134,11 @@ pub fn build(app: &Application) {
     let spacer = GtkBox::new(Orientation::Horizontal, 0);
     spacer.set_hexpand(true);
     base.append(&spacer);
+
     // =========================================================================
     // RIGHT
     // =========================================================================
-
     let right = GtkBox::new(Orientation::Horizontal, 8);
-
-    // -------------------------------------------------------------------------
-    // Temperature
-    // -------------------------------------------------------------------------
-    let temp_label = Label::new(None);
-    temp_label.set_text(&cpu_temperature());
-    right.append(&temp_label);
-
-    // -------------------------------------------------------------------------
-    // Network
-    // -------------------------------------------------------------------------
-    let network_label = Label::new(None);
-    network_label.set_text(&network_name());
-    right.append(&network_label);
 
     // -------------------------------------------------------------------------
     // Battery graphic
@@ -167,9 +163,9 @@ pub fn build(app: &Application) {
     // -------------------------------------------------------------------------
     // NATO time
     // -------------------------------------------------------------------------
-    let nato_label = Label::new(None);
-    nato_label.set_text(&nato::nato_time());
-    right.append(&nato_label);
+    //let nato_label = Label::new(None);
+    //nato_label.set_text(&nato::nato_time());
+    //right.append(&nato_label);
     base.append(&right);
     overlay.set_child(Some(&base));
 
@@ -283,14 +279,14 @@ pub fn build(app: &Application) {
     let battery_area_tick = battery_area.clone();
     let battery_tick = battery_label.clone();
     let battery_power_tick = battery_power_label.clone();
-    let nato_tick = nato_label.clone();
+    //let nato_tick = nato_label.clone();
     glib::timeout_add_seconds_local(10, move || {
         temp_tick.set_text(&cpu_temperature());
         network_tick.set_text(&network_name());
         battery_area_tick.queue_draw();
         battery_tick.set_text(&battery_perc());
         battery_power_tick.set_text(&battery_power());
-        nato_tick.set_text(&nato::nato_time());
+     //   nato_tick.set_text(&nato::nato_time());
         glib::ControlFlow::Continue
     });
 
@@ -299,4 +295,3 @@ pub fn build(app: &Application) {
     // =========================================================================
     window.present();
 }
-

@@ -33,7 +33,7 @@ fn draw(cr: &Context) {
     let y = 10.0;
     let mut x = 4.0;
     // HH
-    x = draw_number(cr, now.hour(), 5, x, y);
+    x = draw_number(cr, now.hour(), 6, x, y);
     x += 5.0;
     draw_separator(cr, x, y);
     x += 7.0;
