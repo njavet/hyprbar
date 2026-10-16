@@ -1,9 +1,8 @@
 use crate::system::{hyprland, procfs, sysfs};
 use crate::theme;
 use crate::widgets::{battery, binary_clock, graph};
-use hyprbar::nato::time;
+use crate::nato::time::nato_time;
 
-use chrono::{Local, Offset};
 use gtk4::prelude::*;
 use gtk4::{Align, Application, ApplicationWindow, Box as GtkBox, Label, Orientation, Overlay};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
@@ -11,18 +10,6 @@ use gtk4_layer_shell::{Edge, Layer, LayerShell};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-// -----------------------------------------------------------------------------
-// Time
-// -----------------------------------------------------------------------------
-
-fn nato_time() -> String {
-    let now = Local::now();
-
-    let offset = now.offset().fix().local_minus_utc();
-    let zone = time::nato_zone(offset);
-
-    format!("{}{zone}", now.format("%H%M"))
-}
 
 // -----------------------------------------------------------------------------
 // Labels

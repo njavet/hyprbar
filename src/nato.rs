@@ -1,6 +1,13 @@
-pub mod nato {
-    pub mod time {
-        pub fn nato_zone(offset_seconds: i32) -> char {
+pub mod time {
+    use chrono::{Local, Offset};
+
+    pub fn nato_time() -> String {
+            let now = Local::now();
+            let offset = now.offset().fix().local_minus_utc();
+            let zone = nato_zone(offset);
+            format!("{}{zone}", now.format("%H%M"))
+        }
+        fn nato_zone(offset_seconds: i32) -> char {
             match offset_seconds / 3600 {
                 0 => 'Z',
 
@@ -34,4 +41,3 @@ pub mod nato {
             }
         }
     }
-}
