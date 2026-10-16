@@ -9,28 +9,24 @@ pub struct Battery {
 
 pub fn battery() -> Option<Battery> {
     let base = "/sys/class/power_supply/BAT0";
-
     // TODO how does rust know it's u8 parse ?
     let capacity = fs::read_to_string(format!("{base}/capacity"))
         .ok()?
         .trim()
         .parse()
         .ok()?;
-
     let power_w = fs::read_to_string(format!("{base}/power_now"))
         .ok()?
         .trim()
         .parse()
         .map(|uw: f64| uw / 1_000_000.0)
         .ok()?;
-
     let charging;
     if fs::read_to_string(format!("{base}/status")).ok()?.trim() == "Not charging" {
         charging = false;
     } else {
         charging = true;
     }
-
     Some(Battery {
         capacity,
         power_w,
@@ -40,10 +36,8 @@ pub fn battery() -> Option<Battery> {
 
 pub fn temperature() -> Option<f64> {
     let entries = fs::read_dir("/sys/class/thermal").ok()?;
-
     for entry in entries.flatten() {
         let path = entry.path();
-
         if !path
             .file_name()?
             .to_string_lossy()
@@ -51,14 +45,11 @@ pub fn temperature() -> Option<f64> {
         {
             continue;
         }
-
         let temp = fs::read_to_string(path.join("temp")).ok()?;
-
         if let Ok(value) = temp.trim().parse::<f64>() {
             return Some(value / 1000.0);
         }
     }
-
     None
 }
 
