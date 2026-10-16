@@ -1,0 +1,7 @@
+
+mod nato {
+    mod time {
+        
+
+    }
+}

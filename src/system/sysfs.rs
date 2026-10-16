@@ -24,10 +24,8 @@ pub fn battery() -> Option<Battery> {
         .map(|uw: f64| uw / 1_000_000.0)
         .ok()?;
 
-    let charging_str = fs::read_to_string(format!("{base}/status")).ok()?.trim();
-
     let charging;
-    if charging_str == "Not charging" {
+    if fs::read_to_string(format!("{base}/status")).ok()?.trim() == "Not charging" {
         charging = false;
     } else {
         charging = true;
